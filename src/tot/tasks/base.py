@@ -2,7 +2,7 @@ import os
 DATA_PATH = os.path.join(os.path.dirname(__file__), '..', 'data')
 
 class Task:
-    def __init__(self):
+    def __init__(self, args):
         pass
 
     def __len__(self) -> int:

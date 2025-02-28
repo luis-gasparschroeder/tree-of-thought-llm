@@ -2,7 +2,7 @@ import os
 import re
 from tot.tasks.base import Task, DATA_PATH
 from tot.prompts.text import *
-from tot.models import gpt
+from tot.models import gpt, generate_responses
 
 
 class TextTask(Task):
@@ -13,15 +13,16 @@ class TextTask(Task):
     Input Example: 
     Output Example: 
     """
-    def __init__(self, file='data_100_random_text.txt'):
+    def __init__(self, args, file='data_100_random_text.txt'):
         """
         file: a text file, each line is some sentences
         """
-        super().__init__()
+        super().__init__(args)
         path = os.path.join(DATA_PATH, 'text', file)
         self.data = open(path).readlines()
         self.steps = 2
         self.stops = ['\nPassage:\n', None]
+        self.args = args
 
     def __len__(self) -> int:
         return len(self.data)
@@ -32,7 +33,8 @@ class TextTask(Task):
     def test_output(self, idx: int, output: str):
         output = output.split('Passage:\n')[-1]
         prompt = score_prompt + output
-        score_outputs = gpt(prompt, n=5, model='gpt-4')
+        # LGS: score_outputs = gpt(prompt, n=5, model='gpt-4')
+        score_outputs = generate_responses(prompt, n=5, model=self.args.backend)
         scores = []
         for score_output in score_outputs:
             # print(score_output)

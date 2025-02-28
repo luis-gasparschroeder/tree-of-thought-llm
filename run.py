@@ -1,13 +1,15 @@
 import os
 import json
 import argparse
+import logging
+import sys
 
 from tot.tasks import get_task
 from tot.methods.bfs import solve, naive_solve
 from tot.models import gpt_usage
 
 def run(args):
-    task = get_task(args.task)
+    task = get_task(args.task, args) # LGS: Get Task Object
     logs, cnt_avg, cnt_any = [], 0, 0
     if args.naive_run:
         file = f'./logs/{args.task}/{args.backend}_{args.temperature}_naive_{args.prompt_sample}_sample_{args.n_generate_sample}_start{args.task_start_index}_end{args.task_end_index}.json'
@@ -41,8 +43,10 @@ def run(args):
 
 
 def parse_args():
+    print("Start Argument Parsing...")
     args = argparse.ArgumentParser()
-    args.add_argument('--backend', type=str, choices=['gpt-4', 'gpt-3.5-turbo', 'gpt-4o'], default='gpt-4')
+    args.add_argument('--backend', type=str, choices=['Qwen/Qwen2-7B', 'Qwen/Qwen2.5-32B-Instruct', 'gpt-4', 'gpt-3.5-turbo', 'gpt-4o'], default='Qwen/Qwen2-7B')
+    args.add_argument('--inference_server', type=str, choices=['openai', 'local'], default='local')
     args.add_argument('--temperature', type=float, default=0.7)
 
     args.add_argument('--task', type=str, required=True, choices=['game24', 'text', 'crosswords'])
@@ -62,8 +66,26 @@ def parse_args():
     args = args.parse_args()
     return args
 
+def get_logger(name=__name__):
+    name = name.split('.')[-1]
+
+    logger = logging.getLogger(name)
+    
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        logger.setLevel(logging.DEBUG)
+        logger.propagate = False
+
+    return logger
 
 if __name__ == '__main__':
+    print("Starting...")
+    logger = get_logger('main')
+    logger.info("Start ToT...")
     args = parse_args()
     print(args)
     run(args)

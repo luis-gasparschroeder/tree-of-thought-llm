@@ -3,10 +3,10 @@ import os
 import json
 from tot.tasks.base import Task, DATA_PATH
 from tot.prompts.crosswords import * 
-from tot.models import gpt
+from tot.models import gpt, generate_responses
 
 class MiniCrosswordsEnv:
-    def __init__(self, file='mini0505.json'):
+    def __init__(self, args, file='mini0505.json'):
         self.file = os.path.join(DATA_PATH, 'crosswords', file)
 
         self.file = json.load(open(self.file))
@@ -15,6 +15,7 @@ class MiniCrosswordsEnv:
         self.idx = None
         self.times = 0
         self.prompt_status_cache = {}
+        self.args = args
 
     def __len__(self):
         return self.n
@@ -48,7 +49,8 @@ class MiniCrosswordsEnv:
             if prompt in self.prompt_status_cache:
                 res = self.prompt_status_cache[prompt]
             else:
-                res = gpt(prompt)[0]
+                # LGS: res = gpt(prompt)[0]
+                res = generate_responses(prompt)[0]
                 self.prompt_status_cache[prompt] = res
             # print(line)
             # print(res)
@@ -163,7 +165,7 @@ class MiniCrosswordsTask(Task):
         """
         file: a csv file (fixed)
         """
-        super().__init__()
+        super().__init__(args)
         self.env = MiniCrosswordsEnv(file)  # use it as a stateless tool
         self.xs = []
         for idx in range(len(self.env)):
@@ -247,7 +249,8 @@ class MiniCrosswordsTask(Task):
             ans = ' '.join(ans.lower())
             line = f'{data}: {ans}'
             prompt = value_prompt.format(input=line)
-            res = gpt(prompt)[0]
+            # LGS: res = gpt(prompt)[0]
+            res = generate_responses(prompt)[0]
             print(line)
             print(res)
             print()

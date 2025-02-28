@@ -1,13 +1,14 @@
 import itertools
 import numpy as np
 from functools import partial
-from tot.models import gpt
+from tot.models import gpt, generate_responses
 
 def get_value(task, x, y, n_evaluate_sample, cache_value=True):
     value_prompt = task.value_prompt_wrap(x, y)
     if cache_value and value_prompt in task.value_cache:
         return task.value_cache[value_prompt]
-    value_outputs = gpt(value_prompt, n=n_evaluate_sample, stop=None)
+    # LGS: value_outputs = gpt(value_prompt, n=n_evaluate_sample, stop=None)
+    value_outputs = generate_responses(value_prompt, n=n_evaluate_sample, stop=None)
     value = task.value_outputs_unwrap(x, y, value_outputs)
     if cache_value:
         task.value_cache[value_prompt] = value
@@ -27,13 +28,15 @@ def get_values(task, x, ys, n_evaluate_sample, cache_value=True):
 
 def get_votes(task, x, ys, n_evaluate_sample):
     vote_prompt = task.vote_prompt_wrap(x, ys)
-    vote_outputs = gpt(vote_prompt, n=n_evaluate_sample, stop=None)
+    # LGS: vote_outputs = gpt(vote_prompt, n=n_evaluate_sample, stop=None)
+    vote_outputs = generate_responses(vote_prompt, n=n_evaluate_sample, stop=None)
     values = task.vote_outputs_unwrap(vote_outputs, len(ys))
     return values
 
 def get_proposals(task, x, y): 
     propose_prompt = task.propose_prompt_wrap(x, y)
-    proposals = gpt(propose_prompt, n=1, stop=None)[0].split('\n')
+    # LGS: proposals = gpt(propose_prompt, n=1, stop=None)[0].split('\n')
+    proposals = generate_responses(propose_prompt, n=1, stop=None)[0].split('\n')
     return [y + _ + '\n' for _ in proposals]
 
 def get_samples(task, x, y, n_generate_sample, prompt_sample, stop):
@@ -43,7 +46,8 @@ def get_samples(task, x, y, n_generate_sample, prompt_sample, stop):
         prompt = task.cot_prompt_wrap(x, y)
     else:
         raise ValueError(f'prompt_sample {prompt_sample} not recognized')
-    samples = gpt(prompt, n=n_generate_sample, stop=stop)
+    # LGS: samples = gpt(prompt, n=n_generate_sample, stop=stop)
+    samples = generate_responses(prompt, n=n_generate_sample, stop=stop)
     return [y + _ for _ in samples]
 
 def solve(args, task, idx, to_print=True):
