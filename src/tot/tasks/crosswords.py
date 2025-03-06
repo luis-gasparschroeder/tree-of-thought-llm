@@ -161,7 +161,7 @@ class MiniCrosswordsTask(Task):
     Input Example: 
     Output Example: 
     """
-    def __init__(self, file='mini0505.json'):
+    def __init__(self, args, file='mini0505.json'):
         """
         file: a csv file (fixed)
         """

@@ -36,6 +36,8 @@ def run(args):
         cnt_avg += sum(accs) / len(accs)
         cnt_any += any(accs)
         print(i, 'sum(accs)', sum(accs), 'cnt_avg', cnt_avg, 'cnt_any', cnt_any, '\n')
+        
+        print(f"LGS -> Task {i} Finished \n\n\n\n\n")
     
     n = args.task_end_index - args.task_start_index
     print(cnt_avg / n, cnt_any / n)
