@@ -16,7 +16,6 @@ python run.py \
     --inference_server local \
     --task game24 \
     --method_generate propose \
-    --method_evaluate value \
     --method_select greedy \
     --task_start_index 900 \
     --task_end_index 902 \
