@@ -6,10 +6,12 @@ from tot.models import gpt, generate_responses
 def get_value(task, x, y, n_evaluate_sample, cache_value=True):
     value_prompt = task.value_prompt_wrap(x, y)
     if cache_value and value_prompt in task.value_cache:
+        print(f"LGS: Get_Value -> Value_Prompt: {value_prompt}, Value[R]: {task.value_cache[value_prompt]} \n\n")
         return task.value_cache[value_prompt]
     # LGS: value_outputs = gpt(value_prompt, n=n_evaluate_sample, stop=None)
     value_outputs = generate_responses(value_prompt, n=n_evaluate_sample, stop=None)
     value = task.value_outputs_unwrap(x, y, value_outputs)
+    print(f"LGS: Get_Value -> Value_Prompt: {value_prompt}, Value_Outputs: {value_outputs}, Value: {value} \n\n")
     if cache_value:
         task.value_cache[value_prompt] = value
     return value
@@ -17,6 +19,8 @@ def get_value(task, x, y, n_evaluate_sample, cache_value=True):
 def get_values(task, x, ys, n_evaluate_sample, cache_value=True):
     values = []
     local_value_cache = {}
+    print(f"LGS: Get_Values -> x: {x}\n ys: {ys}, \n n_evaluate_sample:{n_evaluate_sample}\n\n")
+    # LGS: x = input/task, ys = proposals
     for y in ys:  # each partial output
         if y in local_value_cache:  # avoid duplicate candidates
             value = 0

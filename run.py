@@ -47,7 +47,7 @@ def run(args):
 def parse_args():
     print("Start Argument Parsing...")
     args = argparse.ArgumentParser()
-    args.add_argument('--backend', type=str, choices=['Qwen/Qwen2-7B', 'Qwen/Qwen2.5-32B-Instruct', 'gpt-4', 'gpt-3.5-turbo', 'gpt-4o'], default='Qwen/Qwen2-7B')
+    args.add_argument('--backend', type=str, choices=['Qwen/Qwen2-7B', 'Qwen/Qwen2.5-14B', 'Qwen/Qwen2.5-32B-Instruct', 'gpt-4', 'gpt-3.5-turbo', 'gpt-4o'], default='Qwen/Qwen2-7B')
     args.add_argument('--inference_server', type=str, choices=['openai', 'local'], default='local')
     args.add_argument('--temperature', type=float, default=0.7)
 

@@ -189,6 +189,19 @@ class MiniCrosswordsTask(Task):
     #             _, _, _, info = self.env.step(line)
     #     return info['r_word']
     
+    # def test_output(self, idx: int, output: str):
+    #     self.env.reset(idx)
+    #     output = output.split('Output:\n')[-1]
+    #     info = {'r_word': 0, 'r_letter': 0, 'r_game': 0}
+    #     for i, line in enumerate(output.strip().split('\n')[-5:], 1):
+    #         letters = line.split(' ')[:5]
+    #         word = ''.join(letters)
+    #         word = word + '_' * (5 - len(word))
+    #         action = f'h{i}. {word}'
+    #         # print(action)
+    #         _, _, _, info = self.env.step(action)
+    #     info['r'] = info['r_word']
+    #     return info
     def test_output(self, idx: int, output: str):
         self.env.reset(idx)
         output = output.split('Output:\n')[-1]
@@ -198,9 +211,12 @@ class MiniCrosswordsTask(Task):
             word = ''.join(letters)
             word = word + '_' * (5 - len(word))
             action = f'h{i}. {word}'
-            # print(action)
-            _, _, _, info = self.env.step(action)
-        info['r'] = info['r_word']
+            _, _, _, new_info = self.env.step(action)
+            if 'r_word' in new_info:
+                info = new_info
+            else:
+                print(f"Warning: invalid action returned for '{action}'.")
+        info['r'] = info.get('r_word', 0)
         return info
 
     def set_status(self, x: str, y: str):
