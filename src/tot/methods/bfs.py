@@ -62,6 +62,50 @@ def get_samples(task, x, y, n_generate_sample, prompt_sample, stop):
     print(f"LGS: Get_Samples -> Samples: {samples}\n\n")
     return [y + _ for _ in samples]
 
+# 1 Level P-Map
+# => 1 Stage generation -> Splitter after generation
+# ==> 1 State Evaluation -> Operates on each item from first stage
+# ===> 1 State -> Put stream together for selection stage
+
+# Both have the same amount of GPUs available
+# Baseline: No streaming and parallelization in LangGraph (routing is round robin or least loaded queue)
+# ALTO: Streaming and parallelization (this will adjust for the different amoutn of generation steps between requests)
+#       Consider conditional nodes (for now, start with depth 1)
+#       Implementation (for FacTool): 
+#           Rust:
+#               Server: (same folder) https://github.com/stanford-futuredata/lm-pipeline-serving/blob/interface_backend/factool_app/src/bin/factool.rs
+#               Client: (same folder, few changes required) https://github.com/stanford-futuredata/lm-pipeline-serving/blob/interface_backend/factool_app/src/bin/factool_client.rs
+#           Python:
+#               Folder: https://github.com/stanford-futuredata/lm-pipeline-serving/tree/interface_backend/alto_py/apps
+#               Baseline Version: https://github.com/stanford-futuredata/lm-pipeline-serving/tree/interface_backend/alto_py/apps/factool
+#               Factool Version
+#                   Even this version uses ALTO (at least the RUST code to receive all the requests)
+#                   https://github.com/stanford-futuredata/lm-pipeline-serving/blob/interface_backend/alto_py/apps/factool/langgraph-subgraph/stages/factool.py
+#               ALTO Version: 
+#                   Outer pipeline: (queues to communicate between stages) https://github.com/stanford-futuredata/lm-pipeline-serving/blob/interface_backend/alto_py/apps/factool/pipelined/factool_manifest.yml
+#                       (We have three stages + drivers)
+#                       yaml_pmap_edges: 
+#                          - !YamlPmapEdge:
+#                             source: [claim_extraction_lm, ce_claims] # Queue out generation
+#                             sink: [claim_appraisal_lm, ca_verified_claims] # Queue into generation
+#                   Static resource assignment: https://github.com/stanford-futuredata/lm-pipeline-serving/tree/interface_backend/alto_py/apps/factool/pipelined/resource_assignments 
+#                   Actual application code: https://github.com/stanford-futuredata/lm-pipeline-serving/tree/interface_backend/alto_py/apps/factool/pipelined/stages
+#                       LM Stages in FacTool: (Uses ALTO API) https://github.com/stanford-futuredata/lm-pipeline-serving/blob/interface_backend/alto_py/apps/factool/pipelined/stages/lm.py 
+#           Between:
+#               Communcation Client<->Server: https://github.com/stanford-futuredata/lm-pipeline-serving/blob/interface_backend/alto_py/apps/factool/factool.proto
+#       Run:
+#           Compile: cargo b --release (from top level)
+#           Sanity Check: cargo test
+#           Python Tests: cd alto_py
+#                         python -m unittest discover tests -v
+#           Declare Application: 
+
+# Next Steps)
+#   1: Get Request from Rust client
+#   2: ToT with LangGraph
+#   3: ToT with ALTO
+#   => Expected 2-ish weeks
+
 def solve(args, task, idx, to_print=True):
     global gpt
     gpt = partial(gpt, model=args.backend, temperature=args.temperature)
@@ -87,7 +131,7 @@ def solve(args, task, idx, to_print=True):
         
         '''
         Evaluation
-           Value) ToT assigns each of the new steps a score (sequentially and with a cache)
+           Value) ToT assigns each of the new steps a score (sequentially based on prev. generation and with a cache to avoid duplicate inferences)
         '''
         if args.method_evaluate == 'vote':
             print("\n\nLGS: Evaluation -> Vote")
@@ -97,7 +141,7 @@ def solve(args, task, idx, to_print=True):
             values = get_values(task, x, new_ys, args.n_evaluate_sample)
 
         '''
-        Evaluation
+        Selection
            Greedy) ToT sorts evaluation values descending and picks top-k (where k = n_select_sample)
         '''
         if args.method_select == 'sample':
@@ -106,6 +150,7 @@ def solve(args, task, idx, to_print=True):
             select_ids = np.random.choice(ids, size=args.n_select_sample, p=ps).tolist()
         elif args.method_select == 'greedy':
             print("\n\nLGS: Selection -> Greedy")
+            # LGS: Maybe speculative decoding/execution (if time)
             select_ids = sorted(ids, key=lambda x: values[x], reverse=True)[:args.n_select_sample]
         select_new_ys = [new_ys[select_id] for select_id in select_ids]
         print(f"LGS: After Selection -> len(select_new_ys): {len(select_new_ys)}, select_new_ys: {select_new_ys}")
