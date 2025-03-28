@@ -2,8 +2,9 @@ import re
 import os
 import sympy
 import pandas as pd
-from tot.tasks.base import Task, DATA_PATH
-from tot.prompts.game24 import * 
+import sys
+from apps.tree_of_thought.tree_of_thought_llm.src.tot.tasks.base import Task, TOT_DATA_PATH
+from apps.tree_of_thought.tree_of_thought_llm.src.tot.prompts.game24 import * 
 
 
 def get_current_numbers(y: str) -> str:
@@ -29,7 +30,7 @@ class Game24Task(Task):
         file: a csv file (fixed)
         """
         super().__init__(args)
-        path = os.path.join(DATA_PATH, '24', file)
+        path = os.path.join(TOT_DATA_PATH, '24', file)
         self.data = list(pd.read_csv(path)['Puzzles'])
         self.value_cache = {}
         self.steps = 4

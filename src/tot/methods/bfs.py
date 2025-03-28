@@ -1,13 +1,40 @@
 import itertools
 import numpy as np
 from functools import partial
-from tot.models import gpt, generate_responses
+import sys
+from apps.tree_of_thought.tree_of_thought_llm.src.tot.models import (
+        gpt, 
+        generate_responses,
+        generate_responses_async_parallel
+    )
 
 '''
     --n_generate_sample 3  <= Number of times to prompt (each individual thought) for thought generation
     --n_evaluate_sample 2  <= Number of times to prompt (each state/value) for evaluation
     --n_select_sample 5    <= For top-k in evaluation step
 '''
+
+
+async def get_value_async_parallel(task, 
+                             x, 
+                             y, 
+                             n_evaluate_sample,
+                             sampling_params,
+                             cache_value=True):
+    value_prompt = task.value_prompt_wrap(x, y)
+    if cache_value and value_prompt in task.value_cache:
+        print(f"LGS: Get_Value -> x: {x}, y: {y}, Value_Prompt: {value_prompt}, Value[R]: {task.value_cache[value_prompt]} \n\n")
+        return task.value_cache[value_prompt]
+    value_outputs = await generate_responses_async_parallel(
+             value_prompt, 
+             sampling_params,
+             n=n_evaluate_sample, 
+             stop=None)
+    value = task.value_outputs_unwrap(x, y, value_outputs)
+    print(f"LGS: Get_Value -> x: {x}, y: {y}, Value_Prompt: {value_prompt}, Value_Outputs: {value_outputs}, Value: {value} \n\n")
+    if cache_value:
+        task.value_cache[value_prompt] = value
+    return value
 
 def get_value(task, x, y, n_evaluate_sample, cache_value=True):
     value_prompt = task.value_prompt_wrap(x, y)
@@ -43,11 +70,35 @@ def get_votes(task, x, ys, n_evaluate_sample):
     print(f"LGS: Get_Votes -> Vote_Prompt: {vote_prompt},\n Vote_Outputs: {vote_outputs},\n Values: {values}\n\n")
     return values
 
+async def get_proposals_async_parallel(task, x, y,
+                                       sampling_params):
+    propose_prompt = task.propose_prompt_wrap(x, y)
+    proposals = await generate_responses_async_parallel(propose_prompt, n=1, stop=None)[0].split('\n')
+    print(f"LGS: Get_Proposals -> Propose_Prompt: {propose_prompt},\n Proposals: {proposals}\n\n")
+    return [y + _ + '\n' for _ in proposals]
+
 def get_proposals(task, x, y): 
     propose_prompt = task.propose_prompt_wrap(x, y)
     proposals = generate_responses(propose_prompt, n=1, stop=None)[0].split('\n')
     print(f"LGS: Get_Proposals -> Propose_Prompt: {propose_prompt},\n Proposals: {proposals}\n\n")
     return [y + _ + '\n' for _ in proposals]
+
+async def get_samples_async_parallel(task, x, y,
+                               sampling_params, n_generate_sample, prompt_sample, stop):
+    if prompt_sample == 'standard':
+        prompt = task.standard_prompt_wrap(x, y)
+        print(f"LGS: Get_Samples -> Standard -> Prompt: {prompt}\n\n")
+    elif prompt_sample == 'cot':
+        prompt = task.cot_prompt_wrap(x, y)
+        print(f"LGS: Get_Samples -> COT -> Prompt: {prompt}\n\n")
+    else:
+        raise ValueError(f'prompt_sample {prompt_sample} not recognized')
+    samples = generate_responses_async_parallel(prompt,
+                                                sampling_params,
+                                              n=n_generate_sample,
+                                                stop=stop)
+    print(f"LGS: Get_Samples -> Samples: {samples}\n\n")
+    return [y + _ for _ in samples]
 
 def get_samples(task, x, y, n_generate_sample, prompt_sample, stop):
     if prompt_sample == 'standard':

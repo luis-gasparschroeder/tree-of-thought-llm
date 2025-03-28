@@ -1,8 +1,6 @@
 import os
 import openai
 import backoff 
-from vllm import LLM, SamplingParams
-
 completion_tokens = prompt_tokens = 0
 
 api_key = os.getenv("OPENAI_API_KEY", "")
@@ -22,6 +20,7 @@ def completions_with_backoff(**kwargs):
 
 # Global cache for LLM instances keyed by model name
 _llm_instances = {}
+_tot_lm_engine = None
 
 def get_llm_instance(model):
     global _llm_instances
@@ -35,25 +34,40 @@ def get_llm_instance(model):
             device="cuda")
     return _llm_instances[model]
 
+def set_lm_engine(lm_engine):
+    global _tot_lm_engine
+
+    assert lm_engine != None, "Provided LM engine is none"
+    _tot_lm_engine = lm_engine
+
+async def process_stream(lm_stream):
+    out = []
+    async for item in lm_stream:
+        out.append(item)
+        return "".join(out)
+
+async def generate_responses_async_parallel(
+        prompt,
+        sampling_params,
+        n=1,
+        stop=None):
+    generate_tasks = set()
+    for i in range(n):
+        lm_stream = await _tot_lm_engine.add_request(
+                prompt,
+                sampling_params
+                )
+        generate_task = process_stream(lm_stream)
+        generate_tasks.add(generate_task)
+    results = asyncio.gather(*generate_tasks)
+    return results
+
 def generate_responses(prompt, inference_server="local", model="Qwen/Qwen2-7B", temperature=0.7, max_tokens=1000, n=1, stop=None) -> list:
-    if (inference_server == "local"):
-        print("Generating response with vLLM...")
-        return vllm(prompt, model, temperature, max_tokens, n, stop)
-    elif (inference_server == "openai"):
+    if (inference_server == "openai"):
         print("Generating response with OpenAI...")
         return chatgpt(prompt, model, temperature, max_tokens, n, stop)
     else:
         print(f"Warning: The inference server name '{inference_server}' is invalid. Choose between 'local' and 'openai'")
-
-def vllm(prompt, model="Qwen/Qwen2-7B", temperature=0.7, max_tokens=1000, n=1, stop=None) -> list:
-    llm_instance = get_llm_instance(model)
-    sampling_params = SamplingParams(temperature=temperature, max_tokens=max_tokens)
-    outputs = []
-    for _ in range(n):
-        # LGS: ALTO -> game24 propose_prompt?
-        result = llm_instance.generate(prompt, sampling_params)
-        outputs.append(result[0].outputs[0].text)
-    return outputs
 
 def gpt(prompt, model="gpt-4", temperature=0.7, max_tokens=1000, n=1, stop=None) -> list:
     messages = [{"role": "user", "content": prompt}]
