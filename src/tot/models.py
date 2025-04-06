@@ -1,6 +1,9 @@
 import os
 import openai
 import backoff 
+import asyncio
+from vllm import LLM
+
 completion_tokens = prompt_tokens = 0
 
 api_key = os.getenv("OPENAI_API_KEY", "")
