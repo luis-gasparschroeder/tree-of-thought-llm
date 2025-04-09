@@ -1,6 +1,8 @@
 import os
 import openai
-import backoff 
+import asyncio
+from alto_lib.lm_engine.lm_engine import SamplingParams
+
 completion_tokens = prompt_tokens = 0
 
 api_key = os.getenv("OPENAI_API_KEY", "")
@@ -18,21 +20,7 @@ if api_base != "":
 def completions_with_backoff(**kwargs):
     return openai.ChatCompletion.create(**kwargs)
 
-# Global cache for LLM instances keyed by model name
-_llm_instances = {}
 _tot_lm_engine = None
-
-def get_llm_instance(model):
-    global _llm_instances
-    if model not in _llm_instances:
-        _llm_instances[model] = LLM(
-            model=model, 
-            enforce_eager=True,
-            trust_remote_code=True,
-            tensor_parallel_size=4, 
-            dtype="float16", 
-            device="cuda")
-    return _llm_instances[model]
 
 def set_lm_engine(lm_engine):
     global _tot_lm_engine
@@ -44,22 +32,29 @@ async def process_stream(lm_stream):
     out = []
     async for item in lm_stream:
         out.append(item)
-        return "".join(out)
+    return "".join(out)
 
 async def generate_responses_async_parallel(
-        prompt,
-        sampling_params,
+        prompt: str,
+        sampling_params: SamplingParams,
         n=1,
         stop=None):
-    generate_tasks = set()
-    for i in range(n):
+    from alto_lib.lm_engine.lm_engine import LmRequest, LmRequestMessage, LmRequestRole
+    
+    generate_tasks = []
+    for _ in range(n):
+        request = LmRequest(messages=[
+            LmRequestMessage(role=LmRequestRole.SYSTEM, content="You are a helpful assistant."),
+            LmRequestMessage(role=LmRequestRole.USER, content=prompt)
+        ])
+        
         lm_stream = await _tot_lm_engine.add_request(
-                prompt,
+                request,
                 sampling_params
                 )
         generate_task = process_stream(lm_stream)
-        generate_tasks.add(generate_task)
-    results = asyncio.gather(*generate_tasks)
+        generate_tasks.append(generate_task)
+    results = await asyncio.gather(*generate_tasks)
     return results
 
 def generate_responses(prompt, inference_server="local", model="Qwen/Qwen2-7B", temperature=0.7, max_tokens=1000, n=1, stop=None) -> list:
