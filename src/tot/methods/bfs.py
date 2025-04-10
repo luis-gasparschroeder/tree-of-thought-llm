@@ -73,7 +73,9 @@ def get_votes(task, x, ys, n_evaluate_sample):
 async def get_proposals_async_parallel(task, x, y,
                                        sampling_params):
     propose_prompt = task.propose_prompt_wrap(x, y)
-    proposals = await generate_responses_async_parallel(propose_prompt, n=1, stop=None)[0].split('\n')
+    results = await generate_responses_async_parallel(propose_prompt,
+            sampling_params, n=1, stop=None)
+    proposals = results[0].split('\n')
     #print(f"LGS: Get_Proposals -> Propose_Prompt: {propose_prompt},\n Proposals: {proposals}\n\n")
     print("*******")
     print("PROPOSALS")

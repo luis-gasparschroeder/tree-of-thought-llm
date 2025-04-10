@@ -94,7 +94,7 @@ class Game24Task(Task):
         # NEW: check if key is "in" each of the value_names
         for last_line in value_names:
             for key in value_map:
-                if key in last_line:
+                if key in last_line.lower():
                     val += value_map[key]
                     break
             
