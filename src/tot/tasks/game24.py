@@ -90,5 +90,18 @@ class Game24Task(Task):
             return 0
         value_names = [_.split('\n')[-1] for _ in value_outputs]
         value_map = {'impossible': 0.001, 'likely': 1, 'sure': 20}  # TODO: ad hoc
-        value = sum(value * value_names.count(name) for name, value in value_map.items())
-        return value
+        val = 0.0
+        # NEW: check if key is "in" each of the value_names
+        for last_line in value_names:
+            for key in value_map:
+                if key in last_line:
+                    val += value_map[key]
+                    break
+            
+        # OLD
+        # value = sum(value * value_names.count(name) for name, value in value_map.items())
+        print("*********")
+        print(f"EVALUATED LAST LINES: {value_names}")
+        print(f"FINAL SCORE: {val}")
+        print("*********")
+        return val

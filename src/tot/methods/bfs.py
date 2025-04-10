@@ -20,10 +20,10 @@ async def get_value_async_parallel(task,
                              y, 
                              n_evaluate_sample,
                              sampling_params,
-                             cache_value=True):
+                             cache_value=False):
     value_prompt = task.value_prompt_wrap(x, y)
     if cache_value and value_prompt in task.value_cache:
-        print(f"LGS: Get_Value -> x: {x}, y: {y}, Value_Prompt: {value_prompt}, Value[R]: {task.value_cache[value_prompt]} \n\n")
+        #print(f"LGS: Get_Value -> x: {x}, y: {y}, Value_Prompt: {value_prompt}, Value[R]: {task.value_cache[value_prompt]} \n\n")
         return task.value_cache[value_prompt]
     value_outputs = await generate_responses_async_parallel(
              value_prompt, 
@@ -31,7 +31,7 @@ async def get_value_async_parallel(task,
              n=n_evaluate_sample, 
              stop=None)
     value = task.value_outputs_unwrap(x, y, value_outputs)
-    print(f"LGS: Get_Value -> x: {x}, y: {y}, Value_Prompt: {value_prompt}, Value_Outputs: {value_outputs}, Value: {value} \n\n")
+    #print(f"LGS: Get_Value -> x: {x}, y: {y}, Value_Prompt: {value_prompt}, Value_Outputs: {value_outputs}, Value: {value} \n\n")
     if cache_value:
         task.value_cache[value_prompt] = value
     return value
@@ -73,15 +73,19 @@ def get_votes(task, x, ys, n_evaluate_sample):
 async def get_proposals_async_parallel(task, x, y,
                                        sampling_params):
     propose_prompt = task.propose_prompt_wrap(x, y)
-    results = await generate_responses_async_parallel(propose_prompt, sampling_params, n=1, stop=None)
-    proposals = results[0].split('\n')
-    print(f"LGS: Get_Proposals -> Propose_Prompt: {propose_prompt},\n Proposals: {proposals}\n\n")
+    proposals = await generate_responses_async_parallel(propose_prompt, n=1, stop=None)[0].split('\n')
+    #print(f"LGS: Get_Proposals -> Propose_Prompt: {propose_prompt},\n Proposals: {proposals}\n\n")
+    print("*******")
+    print("PROPOSALS")
+    for proposal in proposals:
+        print(f"{proposal}")
+    print("*******")
     return [y + _ + '\n' for _ in proposals]
 
 def get_proposals(task, x, y): 
     propose_prompt = task.propose_prompt_wrap(x, y)
     proposals = generate_responses(propose_prompt, n=1, stop=None)[0].split('\n')
-    print(f"LGS: Get_Proposals -> Propose_Prompt: {propose_prompt},\n Proposals: {proposals}\n\n")
+    #print(f"LGS: Get_Proposals -> Propose_Prompt: {propose_prompt},\n Proposals: {proposals}\n\n")
     return [y + _ + '\n' for _ in proposals]
 
 async def get_samples_async_parallel(task, x, y,
