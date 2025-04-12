@@ -43,7 +43,7 @@ def get_value(task, x, y, n_evaluate_sample, cache_value=True):
         return task.value_cache[value_prompt]
     value_outputs = generate_responses(value_prompt, n=n_evaluate_sample, stop=None)
     value = task.value_outputs_unwrap(x, y, value_outputs)
-    print(f"LGS: Get_Value -> x: {x}, y: {y}, Value_Prompt: {value_prompt}, Value_Outputs: {value_outputs}, Value: {value} \n\n")
+    #print(f"LGS: Get_Value -> x: {x}, y: {y}, Value_Prompt: {value_prompt}, Value_Outputs: {value_outputs}, Value: {value} \n\n")
     if cache_value:
         task.value_cache[value_prompt] = value
     return value
@@ -52,7 +52,7 @@ def get_values(task, x, ys, n_evaluate_sample, cache_value=True):
     # LGS: x = input/task, ys = proposals
     values = []
     local_value_cache = {}
-    print(f"LGS: Get_Values -> x: {x}\n ys: {ys}, \n len(ys): {len(ys)}, \n n_evaluate_sample:{n_evaluate_sample}\n\n")
+    #print(f"LGS: Get_Values -> x: {x}\n ys: {ys}, \n len(ys): {len(ys)}, \n n_evaluate_sample:{n_evaluate_sample}\n\n")
     for y in ys:  # each partial output
         if y in local_value_cache:  # avoid duplicate candidates
             value = 0
@@ -60,14 +60,14 @@ def get_values(task, x, ys, n_evaluate_sample, cache_value=True):
             value = get_value(task, x, y, n_evaluate_sample, cache_value=cache_value)
             local_value_cache[y] = value
         values.append(value)
-    print(f"LGS: Get_Values -> Values: {values} \n\n")
+    #print(f"LGS: Get_Values -> Values: {values} \n\n")
     return values
 
 def get_votes(task, x, ys, n_evaluate_sample):
     vote_prompt = task.vote_prompt_wrap(x, ys)
     vote_outputs = generate_responses(vote_prompt, n=n_evaluate_sample, stop=None)
     values = task.vote_outputs_unwrap(vote_outputs, len(ys))
-    print(f"LGS: Get_Votes -> Vote_Prompt: {vote_prompt},\n Vote_Outputs: {vote_outputs},\n Values: {values}\n\n")
+    #print(f"LGS: Get_Votes -> Vote_Prompt: {vote_prompt},\n Vote_Outputs: {vote_outputs},\n Values: {values}\n\n")
     return values
 
 async def get_proposals_async_parallel(task, x, y,
@@ -76,12 +76,12 @@ async def get_proposals_async_parallel(task, x, y,
     results = await generate_responses_async_parallel(propose_prompt,
             sampling_params, n=1, stop=None)
     proposals = results[0].split('\n')
-    #print(f"LGS: Get_Proposals -> Propose_Prompt: {propose_prompt},\n Proposals: {proposals}\n\n")
-    print("*******")
-    print("PROPOSALS")
-    for proposal in proposals:
-        print(f"{proposal}")
-    print("*******")
+    ##print(f"LGS: Get_Proposals -> Propose_Prompt: {propose_prompt},\n Proposals: {proposals}\n\n")
+    #print("*******")
+    #print("PROPOSALS")
+    #for proposal in proposals:
+    #    print(f"{proposal}")
+    #print("*******")
     return [y + _ + '\n' for _ in proposals]
 
 def get_proposals(task, x, y): 

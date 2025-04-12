@@ -100,8 +100,8 @@ class Game24Task(Task):
             
         # OLD
         # value = sum(value * value_names.count(name) for name, value in value_map.items())
-        print("*********")
-        print(f"EVALUATED LAST LINES: {value_names}")
-        print(f"FINAL SCORE: {val}")
-        print("*********")
+        #print("*********")
+        #print(f"EVALUATED LAST LINES: {value_names}")
+        #print(f"FINAL SCORE: {val}")
+        #print("*********")
         return val
