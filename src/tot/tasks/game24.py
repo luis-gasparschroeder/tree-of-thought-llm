@@ -3,8 +3,8 @@ import os
 import sympy
 import pandas as pd
 import sys
-from apps.tree_of_thought.tree_of_thought_llm.src.tot.tasks.base import Task, TOT_DATA_PATH
-from apps.tree_of_thought.tree_of_thought_llm.src.tot.prompts.game24 import * 
+from tot.tasks.base import Task, TOT_DATA_PATH
+from tot.prompts.game24 import * 
 
 
 def get_current_numbers(y: str) -> str:
